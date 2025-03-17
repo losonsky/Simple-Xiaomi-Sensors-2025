@@ -28,14 +28,12 @@ XIAOMI_DEVICES = {
         "dev_type": "LYWSD03MMC",
         "bind_key": bytes.fromhex("1daa6055aa6fc2e17abddab555d63c78")  # 16-byte AES key
     }
-    # ,
-    # "A4:C1:38:C6:11:02": {
-    #     "alias": "MI_2",
-    #     "dev_type": "MHO-C401",
-    #     "bind_key": bytes.fromhex("425291f9922c618494f7bdd4564ebdf5")  # 16-byte AES key
-    #     # "bind_key": bytes.fromhex("d1f73801ef999872ff8b0c0b9fcb1e5d")  # 16-byte AES key
-    #     # "bind_key": bytes.fromhex("bdda814f40f1517d1116594af6ac141c")  # 16-byte AES key
-    # }
+    ,
+    "A4:C1:38:C6:11:02": {
+        "alias": "MI_2",
+        "dev_type": "MHO-C401",
+        "bind_key": bytes.fromhex("425291f9922c618494f7bdd4564ebdf5")  # 16-byte AES key
+    }
     ,
     "A4:C1:38:5E:EB:EB": {
         "alias": "MI_3",
@@ -48,22 +46,29 @@ XIAOMI_DEVICES = {
         "dev_type": "LYWSD03MMC",
         "bind_key": bytes.fromhex("9955608fe7c9cff55dc919a9eefd0a30")  # 16-byte AES key
     }
+    ,
+    "A4:C1:38:D1:64:97": {
+        "alias": "MI_5",
+        "dev_type": "MHO-C401",
+        "bind_key": bytes.fromhex("54b2548d8cceb018c831c3ad19d2c8d3")  # 16-byte AES key
+    }
 }
 
 
 
-# 📡 Received Encrypted Data from MI_0 (A4:C1:38:74:38:7A): 5858 5b05 75 7a387438c1a4 cdf655af5d5e0000ae831e70
-# 📡 Received Encrypted Data from MI_0 (A4:C1:38:74:38:7A): 5858 5b05 76 7a387438c1a4 f52309574f5e0000bb1c9510
-# 📡 Received Encrypted Data from MI_0 (A4:C1:38:74:38:7A): 5858 5b05 88 7a387438c1a4 f8999856cb5e00001bc2f839
-# 📡 Received Encrypted Data from MI_0 (A4:C1:38:74:38:7A): 5858 5b05 da 7a387438c1a4 f5c16f85045e0000c9627de3
+# 📡 Received Encrypted Data from MI_0 (A4:C1:38:74:38:7A): 5858 5b05 75 7a387438c1a4 cdf655af5d5e0000ae831e70 1b64929ca1fa1900973fc858d57c8ef4
+# 📡 Received Encrypted Data from MI_0 (A4:C1:38:74:38:7A): 5858 5b05 76 7a387438c1a4 f52309574f5e0000bb1c9510 1b64929ca1fa1900973fc858d57c8ef4
+# 📡 Received Encrypted Data from MI_0 (A4:C1:38:74:38:7A): 5858 5b05 88 7a387438c1a4 f8999856cb5e00001bc2f839 1b64929ca1fa1900973fc858d57c8ef4
+# 📡 Received Encrypted Data from MI_0 (A4:C1:38:74:38:7A): 5858 5b05 da 7a387438c1a4 f5c16f85045e0000c9627de3 1b64929ca1fa1900973fc858d57c8ef4
 
 
 def decrypt_xiaomi_data(advertisement_data, bind_key, alias):
     """Decrypts Xiaomi BLE encrypted advertisement data."""
     if len(advertisement_data) < 15:
-        print(f"❌ Invalid payload length for {alias}: {advertisement_data.hex()}")
+        if alias != "MI_2" and alias != "MI_5":
+            print(f"❌ Invalid payload length for {alias}: {advertisement_data.hex()}")
         # subprocess.run(["expect", "/usr/local/bin/losonewble.sh", "A4:C1:38:C6:11:02", "1"], check=True)
-        subprocess.run(["expect", "/usr/local/bin/losonewble.sh", "A4:C1:38:C6:11:02"], check=True)
+        # subprocess.run(["expect", "/usr/local/bin/losonewble.sh", "A4:C1:38:C6:11:02"], check=True)
         return None
 
     crypto_payload = advertisement_data[11:-7] # without Header, Counter and MIC
@@ -95,13 +100,7 @@ def detection_callback(device, advertisement_data):
                 print(f"alias: {alias}, decrypted_data: {decrypted_data.hex()}")
                 if len(decrypted_data) == 5:
                     msg, tmp0, tmp1, value = struct.unpack("<BBBh", decrypted_data)
-                    # temp, humi, batt, volt, rssi = struct.unpack("<BBBBB", decrypted_data)
-                    # temp, humi, batt, volt, rssi = struct.unpack("<hBB", decrypted_data[:4])
-                    # temp, hum = struct.unpack("<hH", decrypted_data)
-                    # print(f"alias: {alias}, temp: {temp}, humi: {humi}, batt: {batt}, volt: {volt}, rssi: {rssi}")
-                    # print(f"🌡 {alias} - Temp: {temp / 10:.1f}°C, Humidity: {hum / 10:.1f}%")
                     if msg == 4:
-                        # temp = 0.1 * (256 * decrypted_data[4] + decrypted_data[3])
                         temp = 0.1 * value
                         print(f"alias: {alias}, temp: {temp:.1f}°C")
                         topic = f"{alias}/tx/{dev_type}/temperature"
@@ -112,7 +111,6 @@ def detection_callback(device, advertisement_data):
                         client.loop_start()
                         client.disconnect()
                     if msg == 6:
-                        # humi = 0.1 * (256 * decrypted_data[4] + decrypted_data[3])
                         humi = 0.1 * value
                         print(f"alias: {alias}, humi: {humi:.1f}%")
                         topic = f"{alias}/tx/{dev_type}/humidity"
@@ -125,16 +123,15 @@ def detection_callback(device, advertisement_data):
                 if len(decrypted_data) == 4:
                     msg, tmp0, tmp1, value = struct.unpack("<BBBB", decrypted_data)
                     if msg == 10:
-                        # humi = 0.1 * (256 * decrypted_data[4] + decrypted_data[3])
                         batt = 1.0 * value
                         print(f"alias: {alias}, batt: {batt:.1f}%")
-                        # topic = f"{alias}/tx/{dev_type}/humidity"
-                        # client = mqtt.Client(client_id="orangepizero3", clean_session=True)
-                        # client.username_pw_set(username, password)
-                        # client.connect(broker, port, 60)
-                        # client.publish(topic, humi)
-                        # client.loop_start()
-                        # client.disconnect()
+                        topic = f"{alias}/tx/{dev_type}/batt_percentage"
+                        client = mqtt.Client(client_id="orangepizero3", clean_session=True)
+                        client.username_pw_set(username, password)
+                        client.connect(broker, port, 60)
+                        client.publish(topic, batt)
+                        client.loop_start()
+                        client.disconnect()
                     if msg == 13:
                         print(f"alias: {alias}, tehu: XYZ")
 
