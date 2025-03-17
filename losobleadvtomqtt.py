@@ -14,6 +14,7 @@ broker = "192.168.1.10"
 port = 1883
 username = "test01"
 password = "123"
+client_name = "orangepizero3"
 
 
 XIAOMI_DEVICES = {
@@ -104,7 +105,7 @@ def detection_callback(device, advertisement_data):
                         temp = 0.1 * value
                         print(f"alias: {alias}, temp: {temp:.1f}°C")
                         topic = f"{alias}/tx/{dev_type}/temperature"
-                        client = mqtt.Client(client_id="orangepizero3", clean_session=True)
+                        client = mqtt.Client(client_id=client_name, clean_session=True)
                         client.username_pw_set(username, password)
                         client.connect(broker, port, 60)
                         client.publish(topic, temp)
@@ -114,7 +115,7 @@ def detection_callback(device, advertisement_data):
                         humi = 0.1 * value
                         print(f"alias: {alias}, humi: {humi:.1f}%")
                         topic = f"{alias}/tx/{dev_type}/humidity"
-                        client = mqtt.Client(client_id="orangepizero3", clean_session=True)
+                        client = mqtt.Client(client_id=client_name, clean_session=True)
                         client.username_pw_set(username, password)
                         client.connect(broker, port, 60)
                         client.publish(topic, humi)
@@ -126,7 +127,7 @@ def detection_callback(device, advertisement_data):
                         batt = 1.0 * value
                         print(f"alias: {alias}, batt: {batt:.1f}%")
                         topic = f"{alias}/tx/{dev_type}/batt_percentage"
-                        client = mqtt.Client(client_id="orangepizero3", clean_session=True)
+                        client = mqtt.Client(client_id=client_name, clean_session=True)
                         client.username_pw_set(username, password)
                         client.connect(broker, port, 60)
                         client.publish(topic, batt)
